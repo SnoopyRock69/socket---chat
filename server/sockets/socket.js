@@ -22,13 +22,17 @@ io.on('connection', (client) => {
         usuarios.agregarPersona(client.id, data.nombre, data.sala);
 
         //Emitir a las personas en una sala específica.
-        client.broadcast.to(data.sala).emit('listaPersonas', usuarios.getPersonasPorSala(data.sala));
+        client.broadcast.to(data.sala).emit('listaPersona', usuarios.getPersonasPorSala(data.sala));
+        //Informar a toda la sala quién acaba de ingresar.
+        client.broadcast.to(data.sala).emit('crearMensaje', crearMensaje('Administrador', `${data.nombre} se unió.`))
+
+
 
         callback(usuarios.getPersonasPorSala(data.sala));
     });
 
     //recibir mensajes entre usuarios
-    client.on('crearMensaje', (data) => {
+    client.on('crearMensaje', (data, callback) => {
 
         //Identificar la persona que envía el mensaje
         let persona = usuarios.getPersona(client.id);
@@ -36,8 +40,9 @@ io.on('connection', (client) => {
         let mensaje = crearMensaje(persona.nombre, data.mensaje);
         //Emitir mensaje a todo el mundo.
         client.broadcast.to(persona.sala).emit('crearMensaje', mensaje);
-    })
 
+        callback(mensaje);
+    })
 
     //Manejar desconexión de usuarios
     client.on('disconnect', () => {
@@ -47,7 +52,7 @@ io.on('connection', (client) => {
         client.broadcast.to(personaBorrada.sala).emit('crearMensaje', crearMensaje('Administrador', `${personaBorrada.nombre} salió.`))
 
         //Lista de personas conectadas.
-        client.broadcast.to(personaBorrada.sala).emit('listaPersonas', usuarios.getPersonasPorSala(personaBorrada.sala))
+        client.broadcast.to(personaBorrada.sala).emit('listaPersona', usuarios.getPersonasPorSala(personaBorrada.sala))
 
     })
 
